@@ -6,6 +6,7 @@
     <title>Beni Seviyor Musun?</title>
     
     <style>
+        /* CSS: Sayfanın Görünümü ve Stilleri */
         body {
             display: flex;
             flex-direction: column; 
@@ -17,9 +18,10 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
             padding: 20px;
-            overflow: hidden;
+            overflow: auto; /* Kaydırma aktif */
         }
 
+        /* Ana İstek Mesajı Stili */
         #istek-mesaji {
             font-size: 2.5em;
             color: #333;
@@ -27,6 +29,7 @@
             z-index: 10;
         }
 
+        /* Butonlar İçin Genel Stil */
         .buton-container {
             display: flex;
             gap: 20px;
@@ -36,38 +39,42 @@
         }
 
         button {
-            padding: 15px 30px;
             cursor: pointer;
             border: none;
             border-radius: 8px;
             font-weight: bold;
             transition: all 0.3s ease;
-            min-width: 120px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        /* EVET Butonu (Yeşil) - ARKADA KALSIN */
         #evet-btn {
             background-color: #4CAF50;
             color: white;
-            font-size: 1em;
             position: relative;
-            z-index: 3;
+            z-index: 1; /* Düşük z-index */
             transition: all 0.5s ease;
+            white-space: nowrap; /* Metin satır sonuna kaymasın */
+            display: inline-block; /* Boyutlandırma için */
         }
 
+        /* HAYIR Butonu (Kırmızı) - ÖNDE OLSUN */
         #hayir-btn {
             background-color: #f44336;
             color: white;
-            font-size: 1em;
-            position: fixed;
+            position: relative;
             transition: all 0.2s ease;
-            z-index: 2;
+            z-index: 10; /* Yüksek z-index - her zaman önde */
+            padding: 15px 30px;
+            font-size: 1em;
         }
 
-        #hayir-btn:hover {
-            z-index: 1;
-        }
-
+        /* Sevgi Mesajı Stili (Başlangıçta gizli) */
         #sevgi-mesaji {
             font-size: 3em;
             color: #e91e63;
@@ -89,19 +96,20 @@
             100% { transform: scale(1); }
         }
 
-        @keyframes pulse {
+        @keyframes superGrow {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.2); }
             100% { transform: scale(1); }
         }
 
+        /* MOBİL UYUM */
         @media (max-width: 600px) {
             .buton-container {
                 flex-direction: column;
                 gap: 15px;
             }
             
-            button {
+            #hayir-btn {
                 width: 80vw;
                 padding: 20px;
             }
@@ -127,69 +135,140 @@
     <div id="sevgi-mesaji">Bende Seni Seviyorum! 🎉❤️</div>
 
     <script>
+        // JAVASCRIPT: Etkileşim ve Mantık
+        
+        // Gerekli elemanları değişkene atama
         const evetBtn = document.getElementById('evet-btn');
         const hayirBtn = document.getElementById('hayir-btn');
         const butonlarDiv = document.getElementById('butonlar');
         const sevgiMesaji = document.getElementById('sevgi-mesaji');
         const istekMesaji = document.getElementById('istek-mesaji');
         
+        // Değişkenler
         let evetFontSize = 16;
+        let evetPadding = 15;
         let hayirClickCount = 0;
         let finalMessageShown = false;
+        
+        // Hayır butonu mesajları (8 aşamalı)
         const hayirMesajlari = [
             "Emin misin?",
             "Bak son kez söylüyorum",
             "Emin misin?",
             "Küserim",
             "Bir daha basarsan sıçarım azına",
-            "Tamam Terk Ediyorum SENİ"
+            "Basma artık bunaldım",
+            "Seni Terk Ediyorum",
+            "Hayır" // 8. ve sonrası hep Hayır
         ];
         
-        // Evet butonunun konumunu almak için fonksiyon
-        function getRandomPositionAroundEvet() {
+        // Evet butonunun yakınlarına rastgele konum hesaplama
+        function getRandomPositionNearEvet() {
             const evetRect = evetBtn.getBoundingClientRect();
-            const hayirWidth = hayirBtn.offsetWidth;
-            const hayirHeight = hayirBtn.offsetHeight;
+            const btnWidth = hayirBtn.offsetWidth;
+            const btnHeight = hayirBtn.offsetHeight;
             
-            // Evet butonunun merkez noktası
-            const evetCenterX = evetRect.left + evetRect.width / 2;
-            const evetCenterY = evetRect.top + evetRect.height / 2;
+            // Evet butonu ne kadar büyükse, ışınlanma alanı o kadar geniş olsun
+            const evetSizeFactor = Math.max(evetRect.width, evetRect.height) / 100;
             
-            // Rastgele açı (0-360 derece)
-            const angle = Math.random() * Math.PI * 2;
-            
-            // Evet butonundan rastgele uzaklık (50-150 piksel)
-            const distance = 50 + Math.random() * 100;
-            
-            // Yeni konumu hesapla
-            let randomX = evetCenterX + Math.cos(angle) * distance - hayirWidth / 2;
-            let randomY = evetCenterY + Math.sin(angle) * distance - hayirHeight / 2;
+            const minX = evetRect.left - (300 * evetSizeFactor);
+            const maxX = evetRect.right + (300 * evetSizeFactor) - btnWidth;
+            const minY = evetRect.top - (300 * evetSizeFactor);
+            const maxY = evetRect.bottom + (300 * evetSizeFactor) - btnHeight;
             
             // Ekran sınırlarını kontrol et
-            randomX = Math.max(10, Math.min(window.innerWidth - hayirWidth - 10, randomX));
-            randomY = Math.max(10, Math.min(window.innerHeight - hayirHeight - 10, randomY));
+            const safeMinX = Math.max(10, minX);
+            const safeMaxX = Math.min(window.innerWidth - btnWidth - 10, maxX);
+            const safeMinY = Math.max(10, minY);
+            const safeMaxY = Math.min(window.innerHeight - btnHeight - 10, maxY);
+            
+            // Rastgele konum seç
+            let randomX, randomY;
+            let attempts = 0;
+            const maxAttempts = 30;
+            
+            do {
+                randomX = safeMinX + Math.random() * (safeMaxX - safeMinX);
+                randomY = safeMinY + Math.random() * (safeMaxY - safeMinY);
+                attempts++;
+                
+                // Evet butonundan en az 50 piksel uzakta olmalı
+                const evetCenterX = evetRect.left + evetRect.width / 2;
+                const evetCenterY = evetRect.top + evetRect.height / 2;
+                const hayirCenterX = randomX + btnWidth / 2;
+                const hayirCenterY = randomY + btnHeight / 2;
+                
+                const distance = Math.sqrt(
+                    Math.pow(hayirCenterX - evetCenterX, 2) + 
+                    Math.pow(hayirCenterY - evetCenterY, 2)
+                );
+                
+                if (distance > 80 || attempts >= maxAttempts) {
+                    break;
+                }
+            } while (true);
             
             return { x: randomX, y: randomY };
         }
         
-        // Hayır butonunu ışınlama fonksiyonu
-        function teleportButtonAroundEvet() {
+        // İki elementin çakışıp çakışmadığını kontrol et
+        function isOverlapping(rect1, rect2) {
+            return !(rect1.right < rect2.left || 
+                     rect1.left > rect2.right || 
+                     rect1.bottom < rect2.top || 
+                     rect1.top > rect2.bottom);
+        }
+        
+        // Evet butonunu büyüt fonksiyonu - ÇOK DAHA HIZLI BÜYÜSÜN
+        function growEvetButton() {
+            // Font boyutunu daha hızlı artır (sonsuza kadar)
+            evetFontSize += 40; // 20px yerine 40px
+            evetBtn.style.fontSize = `${evetFontSize}px`;
+            
+            // Padding'i de hızlı artır
+            evetPadding += 15; // 5px yerine 15px
+            evetBtn.style.padding = `${evetPadding}px ${evetPadding * 3}px`;
+            
+            // Boyutları görünür kılmak için
+            evetBtn.style.minWidth = `${evetFontSize * 2}px`;
+            evetBtn.style.minHeight = `${evetFontSize}px`;
+            
+            // Büyüme animasyonu
+            evetBtn.style.animation = 'superGrow 0.3s ease';
+            setTimeout(() => {
+                evetBtn.style.animation = '';
+            }, 300);
+            
+            // Buton çok büyüdüğünde ekranın kaydırılabilir olması için
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Hayır butonunu ışınlama fonksiyonu (3 kere)
+        function teleportButton() {
             let teleportCount = 3;
             
             function teleport() {
                 if (teleportCount > 0) {
-                    const pos = getRandomPositionAroundEvet();
+                    const pos = getRandomPositionNearEvet();
                     hayirBtn.style.position = 'fixed';
                     hayirBtn.style.left = `${pos.x}px`;
                     hayirBtn.style.top = `${pos.y}px`;
                     
                     // Çakışma kontrolü
-                    checkOverlapAndFix();
+                    setTimeout(() => {
+                        const evetRect = evetBtn.getBoundingClientRect();
+                        const hayirRect = hayirBtn.getBoundingClientRect();
+                        
+                        if (isOverlapping(evetRect, hayirRect)) {
+                            hayirBtn.style.zIndex = '10';
+                            evetBtn.style.zIndex = '1';
+                        }
+                    }, 10);
                     
                     teleportCount--;
                     
                     if (teleportCount > 0) {
-                        setTimeout(teleport, 150);
+                        setTimeout(teleport, 100);
                     }
                 }
             }
@@ -197,136 +276,113 @@
             teleport();
         }
         
-        // Çakışma kontrolü ve düzeltme
-        function checkOverlapAndFix() {
-            const evetRect = evetBtn.getBoundingClientRect();
-            const hayirRect = hayirBtn.getBoundingClientRect();
-            
-            // İki butonun çakışıp çakışmadığını kontrol et
-            if (!(hayirRect.right < evetRect.left || 
-                  hayirRect.left > evetRect.right || 
-                  hayirRect.bottom < evetRect.top || 
-                  hayirRect.top > evetRect.bottom)) {
-                
-                // Çakışma varsa, Evet butonunu üste al
-                evetBtn.style.zIndex = '4';
-                hayirBtn.style.zIndex = '2';
-                
-                // Evet butonunu büyüt
-                evetFontSize += 3;
-                evetBtn.style.fontSize = `${evetFontSize}px`;
-                evetBtn.style.animation = 'pulse 0.3s ease';
-                
-                setTimeout(() => {
-                    evetBtn.style.animation = '';
-                }, 300);
-                
-                // Hayır butonunu tekrar ışınla
-                setTimeout(() => {
-                    const newPos = getRandomPositionAroundEvet();
-                    hayirBtn.style.left = `${newPos.x}px`;
-                    hayirBtn.style.top = `${newPos.y}px`;
-                }, 100);
-            } else {
-                // Çakışma yoksa z-index'leri normale döndür
-                evetBtn.style.zIndex = '3';
-                hayirBtn.style.zIndex = '2';
-            }
-        }
-        
+        // Hayır Butonu Tıklama Olayı
         hayirBtn.addEventListener('click', () => {
+            // Eğer 8. tıklamadan sonraysa, sadece "Hayır" olarak kalsın
             if (finalMessageShown) {
                 hayirBtn.textContent = "Hayır";
-                teleportButtonAroundEvet();
+                teleportButton();
                 return;
             }
             
-            // Evet butonunu DAİMA büyüt (sonsuza kadar)
-            evetFontSize += 15;
-            evetBtn.style.fontSize = `${evetFontSize}px`;
-            evetBtn.style.animation = 'pulse 0.5s ease';
+            // Evet butonunu BÜYÜT (çok daha hızlı)
+            growEvetButton();
             
-            setTimeout(() => {
-                evetBtn.style.animation = '';
-            }, 500);
-            
-            if (hayirClickCount < hayirMesajlari.length) {
+            // Hayır butonu mesajını güncelle (8 aşamalı)
+            if (hayirClickCount < hayirMesajlari.length - 1) {
                 hayirBtn.textContent = hayirMesajlari[hayirClickCount];
-                
-                if (hayirClickCount === hayirMesajlari.length - 1) {
-                    finalMessageShown = true;
-                }
             } else {
+                // 8. tıklamada ve sonrasında hep "Hayır"
                 hayirBtn.textContent = "Hayır";
                 finalMessageShown = true;
             }
             
-            teleportButtonAroundEvet();
+            // Hayır butonunu 3 kere ışınla
+            teleportButton();
             hayirClickCount++;
         });
         
-        // Hayır butonuna fareyle gelindiğinde
+        // Hayır Butonuna Fareyle Gelindiğinde
         hayirBtn.addEventListener('mouseenter', () => {
             if (hayirClickCount > 0) {
-                const pos = getRandomPositionAroundEvet();
+                const pos = getRandomPositionNearEvet();
+                hayirBtn.style.position = 'fixed';
                 hayirBtn.style.left = `${pos.x}px`;
                 hayirBtn.style.top = `${pos.y}px`;
-                checkOverlapAndFix();
             }
         });
         
-        // Fare hareketini takip et
-        document.addEventListener('mousemove', (e) => {
-            const hayirRect = hayirBtn.getBoundingClientRect();
-            const mouseX = e.clientX;
-            const mouseY = e.clientY;
-            
-            // Fare Hayır butonunun yakınındaysa
-            if (Math.abs(mouseX - (hayirRect.left + hayirRect.width/2)) < 50 &&
-                Math.abs(mouseY - (hayirRect.top + hayirRect.height/2)) < 50) {
-                
-                const pos = getRandomPositionAroundEvet();
-                hayirBtn.style.left = `${pos.x}px`;
-                hayirBtn.style.top = `${pos.y}px`;
-                checkOverlapAndFix();
-            }
-        });
-        
+        // Evet Butonu Tıklama Olayı
         evetBtn.addEventListener('click', () => {
+            // 1. GİZLEME: Butonları ve istek mesajını gizle
             butonlarDiv.style.display = 'none';
             istekMesaji.style.display = 'none';
+            
+            // 2. GÖSTERME: Sevgi mesajını göster ve animasyon başlat
             sevgiMesaji.style.display = 'block';
             sevgiMesaji.style.animation = 'heartBeat 1s infinite';
             
+            // 3. ZAMANLAMA: 10 saniye (10000 milisaniye) sonra çalışacak işlevi ayarla
             setTimeout(() => {
+                // Gerekli elemanları tekrar görünür yap
                 butonlarDiv.style.display = 'flex';
                 istekMesaji.style.display = 'block';
+                
+                // Sevgi mesajını gizle ve animasyonu durdur
                 sevgiMesaji.style.display = 'none';
                 sevgiMesaji.style.animation = '';
                 
-                // Evet butonunu sıfırla
+                // "Evet" butonunu tamamen sıfırla
                 evetFontSize = 16;
+                evetPadding = 15;
                 evetBtn.style.fontSize = `${evetFontSize}px`;
-                evetBtn.style.zIndex = '3';
+                evetBtn.style.padding = `${evetPadding}px ${evetPadding * 3}px`;
+                evetBtn.style.minWidth = 'auto';
+                evetBtn.style.minHeight = 'auto';
+                evetBtn.style.animation = '';
                 
-                // Hayır butonunu sıfırla
+                // "Hayır" butonunu sıfırla
                 hayirBtn.textContent = "Hayır";
                 hayirBtn.style.position = 'relative';
                 hayirBtn.style.left = 'auto';
                 hayirBtn.style.top = 'auto';
-                hayirBtn.style.zIndex = '2';
+                hayirBtn.style.zIndex = '10';
+                evetBtn.style.zIndex = '1';
                 hayirClickCount = 0;
                 finalMessageShown = false;
                 
-            }, 10000);
+                // Body overflow'u resetle
+                document.body.style.overflow = 'auto';
+                
+            }, 10000); // 10 Saniye (10000 milisaniye)
         });
         
-        // Sayfa yüklendiğinde Hayır butonunu başlangıç pozisyonuna getir
+        // Sayfa yüklendiğinde
         window.addEventListener('load', () => {
+            // Evet butonu başlangıç stilini ayarla
+            evetBtn.style.padding = `${evetPadding}px ${evetPadding * 3}px`;
+            evetBtn.style.fontSize = `${evetFontSize}px`;
+            
+            // Hayır butonunu başlangıç pozisyonuna getir
             hayirBtn.style.position = 'relative';
             hayirBtn.style.left = 'auto';
             hayirBtn.style.top = 'auto';
+            hayirBtn.style.zIndex = '10';
+            evetBtn.style.zIndex = '1';
         });
+        
+        // Ekran boyutu değiştiğinde konumları düzelt
+        window.addEventListener('resize', () => {
+            if (hayirBtn.style.position === 'fixed') {
+                const pos = getRandomPositionNearEvet();
+                hayirBtn.style.left = `${pos.x}px`;
+                hayirBtn.style.top = `${pos.y}px`;
+            }
+        });
+        
+        // Butonların her zaman tıklanabilir olduğundan emin ol
+        hayirBtn.style.pointerEvents = 'auto';
+        evetBtn.style.pointerEvents = 'auto';
     </script>
 </body>
 </html>
